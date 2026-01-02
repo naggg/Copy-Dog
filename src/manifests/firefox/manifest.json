@@ -1,0 +1,36 @@
+{
+
+  "manifest_version": 2,
+  "name": "0.0.6 Copy Dog - Smart Copy Title & URL 🐶",
+  "description": "Copy Dog - Smart Copy Title & URL 🐶",
+  "version": "0.0.2",
+  "homepage_url": "https://naggg.jp",
+  "icons": {
+		"48": "icons/link-48.png"
+  },
+
+  "permissions": ["activeTab", "notifications", "clipboardWrite", "contextMenus"],
+
+  "background": {
+		"scripts": ["background/background.js"]
+  },
+  
+  "content_scripts": [
+	{
+	  "matches": ["<all_urls>"],
+	  "js": ["content/content.js"]
+	}
+  ],
+  
+  "commands": {
+    "copyPageInfo": {
+      "suggested_key": { "default": "Alt+C" },
+      "description": "Copy page title and url to clipboard"
+    },
+    "CopyPageTitleAndURLWithTime": {
+      "suggested_key": { "default": "Alt+X" },
+      "description": "Copy page title, url and time information to clipboard"
+    }
+  }
+
+}
