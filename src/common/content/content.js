@@ -81,41 +81,104 @@ function copyPageInfo(e){
 
 	/**
 	 * ページ日時を取得する
-	 * @returns ページ日時
+	 * @returns ページ日時（正規化済み）
 	 */
 	function extractDate(){
+		var dateString = "";
+		
 		// article:published_time
 		var meta = document.querySelector('meta[property="article:published_time"]');
-		if(meta && meta.content) return meta.content;
+		if(meta && meta.content) dateString = meta.content;
 
 		// JSON-LDからdatePublished
-		var jsonLdList = getAllJsonLd();
-		for(var i = 0; i < jsonLdList.length; i++){
-			if(jsonLdList[i] && jsonLdList[i].datePublished){
-				return jsonLdList[i].datePublished;
+		if(!dateString){
+			var jsonLdList = getAllJsonLd();
+			for(var i = 0; i < jsonLdList.length; i++){
+				if(jsonLdList[i] && jsonLdList[i].datePublished){
+					dateString = jsonLdList[i].datePublished;
+					break;
+				}
 			}
 		}
 
 		// time datetime
-		var time = document.querySelector('time[datetime]');
-		if(time && time.getAttribute('datetime')) return time.getAttribute('datetime');
+		if(!dateString){
+			var time = document.querySelector('time[datetime]');
+			if(time && time.getAttribute('datetime')) dateString = time.getAttribute('datetime');
+		}
 
 		// article:modified_time
-		meta = document.querySelector('meta[property="article:modified_time"]');
-		if(meta && meta.content) return meta.content;
+		if(!dateString){
+			meta = document.querySelector('meta[property="article:modified_time"]');
+			if(meta && meta.content) dateString = meta.content;
+		}
 
 		// JSON-LDからdateModified
-		for(var i=0; i<jsonLdList.length; i++){
-			if(jsonLdList[i] && jsonLdList[i].dateModified){
-				return jsonLdList[i].dateModified;
+		if(!dateString){
+			var jsonLdList = getAllJsonLd();
+			for(var i=0; i<jsonLdList.length; i++){
+				if(jsonLdList[i] && jsonLdList[i].dateModified){
+					dateString = jsonLdList[i].dateModified;
+					break;
+				}
 			}
 		}
 
 		// og:updated_time
-		meta = document.querySelector('meta[property="og:updated_time"]');
-		if(meta && meta.content) return meta.content;
+		if(!dateString){
+			meta = document.querySelector('meta[property="og:updated_time"]');
+			if(meta && meta.content) dateString = meta.content;
+		}
 
-		return "";
+		if(!dateString) return "";
+
+		// 日付を正規化
+		return normalizeDate(dateString);
+	}
+
+	/**
+	 * 日付文字列を正規化する
+	 * @param {string} dateString - 日付文字列
+	 * @returns {string} 正規化された日付文字列（YYYY/MM/DD HH:mm形式）
+	 */
+	function normalizeDate(dateString){
+		if(!dateString) return "";
+
+		// UTCの判定（Z, +00:00, UTC）
+		var isUTC = dateString.charAt(dateString.length - 1) === 'Z' || dateString.indexOf('+00:00') !== -1 || dateString.toLowerCase().indexOf('utc') !== -1;
+
+		// Dateオブジェクトでパース
+		var dateObj = new Date(dateString);
+		
+		// パースに失敗した場合（Invalid Date）
+		if(isNaN(dateObj.getTime())){
+			return dateString;
+		}
+
+		// UTCの場合、ページ言語が日本語ならJSTに変換
+		if(isUTC){
+			var lang = extractLang();
+			if(lang === 'ja'){
+				// JSTに変換（UTC+9時間）
+				dateObj = new Date(dateObj.getTime() + (9 * 60 * 60 * 1000));
+			}
+		}
+		// タイムゾーン指定がある場合は、そのタイムゾーンを採用（Dateオブジェクトが既に処理済み）
+
+		// YYYY/MM/DD HH:mm形式にフォーマット
+		var year = dateObj.getFullYear();
+		var month = dateObj.getMonth() + 1;
+		var day = dateObj.getDate();
+		var hours = dateObj.getHours();
+		var minutes = dateObj.getMinutes();
+
+		// 2桁にゼロパディング（padStartの代替）
+		month = (month < 10 ? '0' : '') + month;
+		day = (day < 10 ? '0' : '') + day;
+		hours = (hours < 10 ? '0' : '') + hours;
+		minutes = (minutes < 10 ? '0' : '') + minutes;
+
+		return year + '/' + month + '/' + day + ' ' + hours + ':' + minutes;
 	}
 
 	/**
@@ -229,6 +292,22 @@ function copyPageInfo(e){
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * ページの言語を取得する
+	 * @returns ページの言語 (en, ja, etc.)
+	 */
+	function extractLang(){
+		// html lang
+		const lang = (document.documentElement.lang || "").trim();
+		if (lang && lang.toLowerCase() !== "und") return lang.split("-")[0].toLowerCase();
+		// meta http-equiv="content-language"
+		const meta = document.querySelector('meta[http-equiv="content-language" i]');
+		const metaLang = (meta?.getAttribute("content") || "").trim();
+		if (metaLang) return metaLang.split(",")[0].split("-")[0].toLowerCase();
+		// navigator.language
+		return (navigator.language || "en").split("-")[0].toLowerCase();
 	}
 	
 }
