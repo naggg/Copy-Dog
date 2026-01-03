@@ -28,10 +28,47 @@ function copyPageInfo(e){
 	 * @returns URL
 	 */
 	function extractURL(){
-		var url = window.location.href;
+		var url = window.location.href;		
+		// トラッキングパラメータの除去
+		url = removeTrackingParams(url);
 		// Amazonの場合は、URLを短縮化
 		if(url.match(/amazon\.co\.jp/)) url = url.replace(/https:\/\/www\.amazon\.co\.jp\/.*\/dp\/([A-Z0-9]+).*$/, 'https://www.amazon.co.jp/dp/$1/');
 		return url;
+	}
+
+	/**
+	 * URLからトラッキングパラメータを除去する
+	 * @param {string} url - 元のURL
+	 * @returns {string} トラッキングパラメータを除去したURL
+	 */
+	function removeTrackingParams(url){
+		try {
+			var urlObj = new URL(url);
+			var params = urlObj.searchParams;
+			
+			// トラッキングパラメータの除去
+			var trackingParams = [
+				'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+				'fbclid', 'gclid', 'gbraid', 'wbraid', 'dclid', 'msclkid', 'twclid', 'ttclid', 'mc_cid', 'mc_eid'
+			];
+			for(var i=0; i<trackingParams.length; i++){
+				params.delete(trackingParams[i]);
+			}
+			
+			// 新しいURLを構築
+			var newUrl = urlObj.origin + urlObj.pathname;
+			var newSearch = params.toString();
+			if(newSearch){
+				newUrl += '?' + newSearch;
+			}
+			if(urlObj.hash){
+				newUrl += urlObj.hash;
+			}			
+			return newUrl;
+		}catch(e){
+			// URLの解析に失敗した場合は、元のURLを返す
+			return url;
+		}
 	}
 
 	/**
