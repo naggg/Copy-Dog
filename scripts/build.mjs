@@ -41,53 +41,90 @@ async function copyFile(src, dest) {
 }
 
 /**
+ * ディレクトリ内の.DS_Storeファイルを再帰的に削除
+ */
+async function removeDSStore(dir) {
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    
+    for (const entry of entries) {
+      const entryPath = path.join(dir, entry.name);
+      
+      if (entry.isDirectory()) {
+        await removeDSStore(entryPath);
+      } else if (entry.name === '.DS_Store') {
+        console.log(`Removing .DS_Store file: ${entryPath}`);
+        try {
+          await fs.unlink(entryPath);
+        } catch (err) {
+          // ファイルが存在しない場合は無視
+        }
+      }
+    }
+  } catch (err) {
+    // ディレクトリが存在しない場合は無視
+  }
+}
+
+/**
  * ビルド処理
  */
 async function build() {
   console.log('Building Firefox extension...');
   
-  const distDir = path.join(rootDir, 'dist', 'firefox');
+  const tmpDir = path.join(rootDir, 'dist', 'tmp');
+  const distDir = path.join(rootDir, 'dist');
   const commonDir = path.join(rootDir, 'src', 'common');
   const manifestSrc = path.join(rootDir, 'src', 'manifests', 'firefox', 'manifest.json');
-  const manifestDest = path.join(distDir, 'manifest.json');
+  const manifestDest = path.join(tmpDir, 'manifest.json');
+  const xpiPath = path.join(distDir, 'copy-dog-fx.xpi');
   
-  // dist/firefox ディレクトリをクリーンアップ
+  // dist/tmp ディレクトリをクリーンアップ
   try {
-    await fs.rm(distDir, { recursive: true, force: true });
+    await fs.rm(tmpDir, { recursive: true, force: true });
   } catch (err) {
     // ディレクトリが存在しない場合は無視
   }
   
-  // common ディレクトリを dist/firefox にコピー
-  console.log('Copying common files...');
-  await copyDir(commonDir, distDir);
+  // common ディレクトリを dist/tmp にコピー
+  console.log('Copying common files to dist/tmp...');
+  await copyDir(commonDir, tmpDir);
   
-  // manifest.json を dist/firefox にコピー
+  // manifest.json を dist/tmp にコピー
   console.log('Copying manifest.json...');
   await copyFile(manifestSrc, manifestDest);
   
-  console.log('Build completed!');
-  console.log(`Output directory: ${distDir}`);
+  // .DS_Storeファイルを削除
+  console.log('Removing .DS_Store files...');
+  await removeDSStore(tmpDir);
   
-  // XPIファイルを作成
+  // dist/tmp をzipパッケージングして dist フォルダに生成
   console.log('Creating XPI file...');
-  const deployDir = path.join(rootDir, 'deploy');
-  await fs.mkdir(deployDir, { recursive: true });
-  const xpiPath = path.join(deployDir, 'copy-dog-fx.xpi');
+  await fs.mkdir(distDir, { recursive: true });
   
   // zipコマンドでXPIファイルを作成
   // macOS/Linux: zip -r, Windows: 別の方法が必要な場合あり
-  const zipCommand = `cd "${distDir}" && zip -r "${xpiPath}" . -x ".*" -x "__MACOSX"`;
+  const zipCommand = `cd "${tmpDir}" && zip -r "${xpiPath}" . -x ".*" -x "__MACOSX"`;
   
   try {
     await execAsync(zipCommand);
     console.log(`XPI file created: ${xpiPath}`);
   } catch (err) {
-    console.warn('Failed to create XPI file:', err.message);
-    console.warn('You can create it manually using:');
-    console.warn(`  cd ${distDir}`);
-    console.warn(`  zip -r ${xpiPath} . -x ".*" -x "__MACOSX"`);
+    console.error('Failed to create XPI file:', err.message);
+    throw err;
   }
+  
+  // dist/tmp フォルダを削除
+  console.log('Cleaning up tmp directory...');
+  try {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+    console.log('Tmp directory removed.');
+  } catch (err) {
+    console.warn('Failed to remove tmp directory:', err.message);
+  }
+  
+  console.log('Build completed!');
+  console.log(`Output file: ${xpiPath}`);
 }
 
 // 実行

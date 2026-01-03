@@ -1,9 +1,11 @@
+var EXTENSION_NAME = "Copy Dog";
+
 /*
  * 右クリックメニューの作成
  */
 browser.contextMenus.create({
 	id: "copyDog",
-	title: "Copy Dog",
+	title: EXTENSION_NAME,
 	contexts: ["page"]
 });
 
@@ -30,8 +32,6 @@ browser.commands.onCommand.addListener((command) => {
 
 	if(command === "copyPageInfo"){
 		scriptToExecute = "copyPageInfo();";
-	}else if(command === "CopyPageTitleAndURLWithTime"){
-		scriptToExecute = "copyPageTitleAndURLWithTime();";
 	}
 
 	if(scriptToExecute){
@@ -73,8 +73,8 @@ function onExecutionError(error) {
 function notify(data){
 	browser.notifications.create({
 		"type": "basic",
-		"iconUrl": browser.runtime.getURL("icons/link-48.png"),
-		"title": "Copy Dog 🐶",
+		"iconUrl": browser.runtime.getURL("icons/icon-48.png"),
+		"title": EXTENSION_NAME,
 		"message": data.message
 	});
 }
