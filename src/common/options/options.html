@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Copy Dog 設定</title>
+	<link rel="stylesheet" href="options.css">
+</head>
+<body>
+	<div class="container">
+		<h1>Copy Dog 設定</h1>
+
+		<section class="section">
+			<h2>出力形式</h2>
+			<p class="description">ページURL($url), タイトル($title), 日付($date), 著者($author), 画像($image) を取得します。<br>取得できない場合は、空文字となります。</p>
+			<div class="radio-group">
+				<label>
+					<input type="radio" name="formatType" value="default1" checked>
+					<span>タイトルとURL</span>
+					<code>$title\n$url</code>
+				</label>
+				<label>
+					<input type="radio" name="formatType" value="default2">
+					<span>タイトル・日時・URL</span>
+					<code>$title ($date)\n$url</code>
+				</label>
+				<label>
+					<input type="radio" name="formatType" value="default3">
+					<span>タイトルとURL（マークダウン形式）</span>
+					<code>[$title]($url)</code>
+				</label>
+				<label>
+					<input type="radio" name="formatType" value="default4">
+					<span>タイトル・日時・URL（マークダウン形式）</span>
+					<code>[$title]($url) ($date)</code>
+				</label>
+				<label>
+					<input type="radio" name="formatType" value="custom">
+					<span>カスタム</span>
+				</label>
+			</div>
+			<div id="customFormatContainer" style="display: none;">
+				<label for="customFormat">カスタムフォーマット（$url, $title, $date, $updated, $author, $image が使用可能）:</label>
+				<textarea id="customFormat" rows="5" placeholder="$title\n$url"></textarea>
+			</div>
+		</section>
+
+		<section class="section">
+			<button id="saveButton">保存</button>
+			<span id="saveMessage" class="save-message"></span>
+		</section>
+	</div>
+
+	<script src="options.js"></script>
+</body>
+</html>
+
