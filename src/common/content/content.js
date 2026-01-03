@@ -258,6 +258,10 @@ function copyPageInfo(e){
 			imageUrl = urlObj.protocol + imageUrl;
 		}
 
+		// クエリパラメータの除去
+		var imageUrlObj = new URL(imageUrl);
+		imageUrl = imageUrlObj.origin + imageUrlObj.pathname;
+
 		return imageUrl;
 	}
 
