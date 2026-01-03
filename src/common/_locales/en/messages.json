@@ -1,0 +1,9 @@
+{
+  "extensionName": {
+    "message": "Copy Dog - Smart Copy Title & URL"
+  },
+  "extensionDescription": {
+    "message": "Quickly copy the current page’s title, URL, published date, author, and OGP image path to your clipboard. Execute by context menu or shortcut Alt+C. Customize the output format (Markdown supported) freely in the settings."
+  }
+}
+  

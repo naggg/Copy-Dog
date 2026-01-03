@@ -1,15 +1,33 @@
 {
 
   "manifest_version": 2,
-  "name": "0.0.6 Copy Dog - Smart Copy Title & URL 🐶",
-  "description": "Copy Dog - Smart Copy Title & URL 🐶",
-  "version": "0.0.2",
-  "homepage_url": "https://naggg.jp",
-  "icons": {
-		"48": "icons/link-48.png"
+  "name": "__MSG_extensionName__",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "ja",
+  "version": "1.0.0",
+  "developer": {
+    "name": "Kenichi Nagai",
+    "url": "https://github.com/naggg/copy-dog"
   },
-
-  "permissions": ["activeTab", "notifications", "clipboardWrite", "contextMenus"],
+  "homepage_url": "https://github.com/naggg/copy-dog",
+  "icons": {
+		"16": "icons/icon-16.png",
+		"32": "icons/icon-32.png",
+		"48": "icons/icon-48.png",
+		"128": "icons/icon-128.png",
+		"256": "icons/icon-256.png"
+  },
+  
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "@copy-dog",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+  
+  "permissions": ["activeTab", "notifications", "clipboardWrite", "contextMenus", "storage"],
 
   "background": {
 		"scripts": ["background/background.js"]
@@ -26,11 +44,12 @@
     "copyPageInfo": {
       "suggested_key": { "default": "Alt+C" },
       "description": "Copy page title and url to clipboard"
-    },
-    "CopyPageTitleAndURLWithTime": {
-      "suggested_key": { "default": "Alt+X" },
-      "description": "Copy page title, url and time information to clipboard"
     }
+  },
+
+  "options_ui": {
+    "page": "options/options.html",
+    "browser_style": false
   }
 
 }
