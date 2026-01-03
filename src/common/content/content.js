@@ -12,16 +12,51 @@ function copyPageInfo(e){
 	var author = extractAuthor();
 	var image = extractImage();
 
-	// 対象文字列
-	var data = [title, url, date, author, image].join("\n");
+	// デフォルトフォーマットの定義
+	var defaultFormats = {
+		default1: "$title\n$url",
+		default2: "$title ($date)\n$url",
+		default3: "[$title]($url)",
+		default4: "[$title]($url) ($date)"
+	};
 
-	// コピペの実行、結果を backgrond.js に戻して、通知する
-	navigator.clipboard.writeText(data)
-	.then(() => {
-		notifyExtension({result: "success", message: data});
-	})
-	.catch(err => {
-		notifyExtension({result: "error", message: "ユーザが拒否、もしくはなんらかの理由で失敗しました。"});
+	// 設定UIからフォーマットを取得
+	var defaultSettings = {
+		formatType: "default1",
+		customFormat: "$title\n$url"
+	};
+
+	browser.storage.local.get(defaultSettings).then(function(items){
+		try{
+			var format = "";
+			if(items.formatType === "custom"){
+				format = items.customFormat || defaultSettings.customFormat;
+			}else{
+				format = defaultFormats[items.formatType] || defaultFormats.default1;
+			}
+			// フォーマットに従ってデータを整形
+			var data = format
+				.replace(/\$url/g, url)
+				.replace(/\$title/g, title)
+				.replace(/\$date/g, date)
+				.replace(/\$author/g, author)
+				.replace(/\$image/g, image);
+
+			// コピペの実行、結果を backgrond.js に戻して、通知する
+			navigator.clipboard.writeText(data)
+			.then(() => {
+				notifyExtension({result: "success", message: data});
+			})
+			.catch(err => {
+				notifyExtension({result: "error", message: "ユーザが拒否、もしくはなんらかの理由で失敗しました。"});
+			});
+		}catch(e){
+			console.error(EXTENSION_NAME + " フォーマット処理エラー: " + e);
+			notifyExtension({result: "error", message: "フォーマット処理中にエラーが発生しました。"});
+		}
+	}).catch(function(err) {
+		console.error(EXTENSION_NAME + " 設定取得エラー: " + err);
+		notifyExtension({result: "error", message: "設定の取得に失敗しました。"});
 	});
 
 
@@ -210,6 +245,8 @@ function copyPageInfo(e){
 			// link rel="author"
 			var link = document.querySelector('link[rel="author"]');
 			if(link && link.href) return link.href;
+			// 取得できない場合
+			return "";
 		}catch(e){
 			console.error(EXTENSION_NAME + " " + e);
 			return "";
