@@ -67,30 +67,30 @@ async function removeDSStore(dir) {
 }
 
 /**
- * ビルド処理
+ * Firefox拡張のビルド処理
  */
-async function build() {
+async function buildFirefox() {
   console.log('Building Firefox extension...');
   
-  const tmpDir = path.join(rootDir, 'dist', 'tmp');
-  const distDir = path.join(rootDir, 'dist');
+  const tmpDir = path.join(rootDir, 'dist', 'firefox', 'tmp');
+  const distDir = path.join(rootDir, 'dist', 'firefox');
   const commonDir = path.join(rootDir, 'src', 'common');
   const manifestSrc = path.join(rootDir, 'src', 'manifests', 'firefox', 'manifest.json');
   const manifestDest = path.join(tmpDir, 'manifest.json');
   const xpiPath = path.join(distDir, 'copy-dog-fx.xpi');
   
-  // dist/tmp ディレクトリをクリーンアップ
+  // dist/firefox/tmp ディレクトリをクリーンアップ
   try {
     await fs.rm(tmpDir, { recursive: true, force: true });
   } catch (err) {
     // ディレクトリが存在しない場合は無視
   }
   
-  // common ディレクトリを dist/tmp にコピー
-  console.log('Copying common files to dist/tmp...');
+  // common ディレクトリを dist/firefox/tmp にコピー
+  console.log('Copying common files to dist/firefox/tmp...');
   await copyDir(commonDir, tmpDir);
   
-  // manifest.json を dist/tmp にコピー
+  // manifest.json を dist/firefox/tmp にコピー
   console.log('Copying manifest.json...');
   await copyFile(manifestSrc, manifestDest);
   
@@ -98,7 +98,7 @@ async function build() {
   console.log('Removing .DS_Store files...');
   await removeDSStore(tmpDir);
   
-  // dist/tmp をzipパッケージングして dist フォルダに生成
+  // dist/firefox/tmp をzipパッケージングして dist/firefox フォルダに生成
   console.log('Creating XPI file...');
   await fs.mkdir(distDir, { recursive: true });
   
@@ -114,7 +114,7 @@ async function build() {
     throw err;
   }
   
-  // dist/tmp フォルダを削除
+  // dist/firefox/tmp フォルダを削除
   console.log('Cleaning up tmp directory...');
   try {
     await fs.rm(tmpDir, { recursive: true, force: true });
@@ -123,8 +123,56 @@ async function build() {
     console.warn('Failed to remove tmp directory:', err.message);
   }
   
-  console.log('Build completed!');
+  console.log('Firefox build completed!');
   console.log(`Output file: ${xpiPath}`);
+}
+
+/**
+ * Chrome拡張のビルド処理
+ */
+async function buildChrome() {
+  console.log('Building Chrome extension...');
+  
+  const distDir = path.join(rootDir, 'dist', 'chrome');
+  const commonDir = path.join(rootDir, 'src', 'common');
+  const manifestSrc = path.join(rootDir, 'src', 'manifests', 'chrome', 'manifest.json');
+  const manifestDest = path.join(distDir, 'manifest.json');
+  
+  // dist/chrome ディレクトリをクリーンアップ
+  try {
+    await fs.rm(distDir, { recursive: true, force: true });
+  } catch (err) {
+    // ディレクトリが存在しない場合は無視
+  }
+  
+  // common ディレクトリを dist/chrome にコピー
+  console.log('Copying common files to dist/chrome...');
+  await copyDir(commonDir, distDir);
+  
+  // manifest.json を dist/chrome にコピー
+  console.log('Copying manifest.json...');
+  await copyFile(manifestSrc, manifestDest);
+  
+  // .DS_Storeファイルを削除
+  console.log('Removing .DS_Store files...');
+  await removeDSStore(distDir);
+  
+  console.log('Chrome build completed!');
+  console.log(`Output directory: ${distDir}`);
+}
+
+/**
+ * メインビルド処理
+ */
+async function build() {
+  try {
+    await buildFirefox();
+    await buildChrome();
+    console.log('\nAll builds completed successfully!');
+  } catch (err) {
+    console.error('Build failed:', err);
+    throw err;
+  }
 }
 
 // 実行

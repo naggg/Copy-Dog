@@ -1,5 +1,9 @@
 var EXTENSION_NAME = "Copy Dog";
 
+// ブラウザAPI判定
+var isFirefox = typeof browser !== "undefined";
+var browserAPI = isFirefox ? browser : chrome;
+
 /*
  * ページのタイトルとURLをクリップボードにコピーする
  */
@@ -20,13 +24,37 @@ function copyPageInfo(e){
 		default4: "[$title]($url) ($date)"
 	};
 
-	// 設定UIからフォーマットを取得
+	// 設定UIからフォーマットを取得i
 	var defaultSettings = {
 		formatType: "default1",
 		customFormat: "$title\n$url"
 	};
 
-	browser.storage.local.get(defaultSettings).then(function(items){
+	// ストレージから設定を取得
+	if(isFirefox){
+		// Firefox: Promise形式
+		browser.storage.local.get(defaultSettings).then(function(items){
+			processFormat(items);
+		}).catch(function(err) {
+			console.error(EXTENSION_NAME + " 設定取得エラー: " + err);
+			sendMessageToBackground({result: "error", message: "設定の取得に失敗しました。"});
+		});
+	}else{
+		// Chrome: コールバック形式
+		chrome.storage.local.get(defaultSettings, function(items) {
+			if(chrome.runtime.lastError){
+				console.error(EXTENSION_NAME + " 設定取得エラー: " + chrome.runtime.lastError);
+				sendMessageToBackground({result: "error", message: "設定の取得に失敗しました。"});
+			}else{
+				processFormat(items);
+			}
+		});
+	}
+
+	/**
+	 * フォーマット処理
+	 */
+	function processFormat(items){
 		try{
 			var format = "";
 			if(items.formatType === "custom"){
@@ -45,19 +73,16 @@ function copyPageInfo(e){
 			// コピペの実行、結果を backgrond.js に戻して、通知する
 			navigator.clipboard.writeText(data)
 			.then(() => {
-				notifyExtension({result: "success", message: data});
+				sendMessageToBackground({result: "success", message: data});
 			})
 			.catch(err => {
-				notifyExtension({result: "error", message: "ユーザが拒否、もしくはなんらかの理由で失敗しました。"});
+				sendMessageToBackground({result: "error", message: "ユーザが拒否、もしくはなんらかの理由で失敗しました。"});
 			});
 		}catch(e){
 			console.error(EXTENSION_NAME + " フォーマット処理エラー: " + e);
-			notifyExtension({result: "error", message: "フォーマット処理中にエラーが発生しました。"});
+			sendMessageToBackground({result: "error", message: "フォーマット処理中にエラーが発生しました。"});
 		}
-	}).catch(function(err) {
-		console.error(EXTENSION_NAME + " 設定取得エラー: " + err);
-		notifyExtension({result: "error", message: "設定の取得に失敗しました。"});
-	});
+	}
 
 
 	/**
@@ -356,8 +381,25 @@ function copyPageInfo(e){
 
 
 /*
- * 通知する
+ * メッセージリスナー（Manifest V3対応）
  */
-function notifyExtension(data){
-	browser.runtime.sendMessage(data);
+browserAPI.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+	if(request && request.action === "copyPageInfo"){
+		try{
+			copyPageInfo();
+			sendResponse({success: true});
+		}catch(e){
+			sendResponse({success: false, error: e.message});
+		}
+		return true; // 非同期レスポンスを許可
+	}
+	return false;
+});
+
+
+/*
+ * backgroundスクリプトにメッセージを送信する
+ */
+function sendMessageToBackground(data){
+	browserAPI.runtime.sendMessage(data);
 }

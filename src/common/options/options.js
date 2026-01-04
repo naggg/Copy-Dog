@@ -1,3 +1,7 @@
+// ブラウザ判定
+var isFirefox = typeof browser !== "undefined";
+var storageAPI = isFirefox ? browser.storage : chrome.storage;
+
 // デフォルトフォーマットの定義
 const defaultFormats = {
 	default1: "$title\n$url",
@@ -31,41 +35,55 @@ document.querySelectorAll('input[name="formatType"]').forEach(radio => {
 });
 
 // 設定を読み込む
-function loadSettings() {
-	browser.storage.local.get(defaultSettings).then(function(items) {
-		// ラジオボタンの設定
-		var formatType = items.formatType || "default1";
-		document.querySelector(`input[name="formatType"][value="${formatType}"]`).checked = true;
+function loadSettings(){
+	if(isFirefox){
+		storageAPI.local.get(defaultSettings).then(function(items){ // Firefox: Promise形式
+			applySettings(items);
+		});
+	}else{
+		storageAPI.local.get(defaultSettings, function(items){ // Chrome: コールバック形式
+			applySettings(items);
+		});
+	}
+}
 
-		// カスタムフォーマットの設定
-		document.getElementById("customFormat").value = items.customFormat || defaultSettings.customFormat;
-
-		// カスタムフォーマットの表示/非表示
-		var customContainer = document.getElementById("customFormatContainer");
-		if (formatType === "custom") {
-			customContainer.style.display = "block";
-		} else {
-			customContainer.style.display = "none";
-		}
-	});
+// 設定を適用する
+function applySettings(items){
+	// ラジオボタンの設定
+	var formatType = items.formatType || "default1";
+	document.querySelector(`input[name="formatType"][value="${formatType}"]`).checked = true;
+	// カスタムフォーマットの設定
+	document.getElementById("customFormat").value = items.customFormat || defaultSettings.customFormat;
+	// カスタムフォーマットの表示/非表示
+	var customContainer = document.getElementById("customFormatContainer");
+	if(formatType === "custom"){
+		customContainer.style.display = "block";
+	}else{
+		customContainer.style.display = "none";
+	}
 }
 
 // 設定を保存する
-function saveSettings() {
+function saveSettings(){
 	var settings = {
 		formatType: document.querySelector('input[name="formatType"]:checked').value,
 		customFormat: document.getElementById("customFormat").value
 	};
 
-	browser.storage.local.set(settings).then(function() {
+	var showSuccessMessage = function(){
 		var saveMessage = document.getElementById("saveMessage");
 		saveMessage.textContent = "保存しました";
-		saveMessage.className = "save-message success";
-		
-		setTimeout(function() {
+		saveMessage.className = "save-message success";		
+		setTimeout(function(){
 			saveMessage.textContent = "";
 			saveMessage.className = "save-message";
 		}, 2000);
-	});
+	};
+
+	if(isFirefox){
+		storageAPI.local.set(settings).then(showSuccessMessage); // Firefox: Promise形式
+	}else{
+		storageAPI.local.set(settings, showSuccessMessage); // Chrome: コールバック形式
+	}
 }
 
